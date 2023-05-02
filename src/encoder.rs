@@ -77,6 +77,27 @@ impl<'a> ExpGolombEncoder<'a> {
         self.bit_buf.put_bytes(&bytes[start..], bit_start)
     }
 
+    /// Encode a `i64` into the buffer. Returns `None` if the buffer is full.
+    ///
+    #[inline]
+    #[must_use]
+    pub fn put_signed_uni(&mut self, value: i64) -> Option<()> {
+        let sign_neg = value < 0;
+        let value: u64 = value.abs_diff(0);
+        let xp1 = value.wrapping_add(1);
+
+        let bytes = xp1.to_be_bytes();
+        let lz = xp1.leading_zeros();
+        let start = (lz / 8) as usize;
+        let bit_start = lz - (lz / 8 * 8);
+
+        let num_zeros = 64 - lz - 1;
+        self.bit_buf.put_zeros(num_zeros);
+
+        self.bit_buf.put_bytes(&bytes[start..], bit_start).unwrap();
+        self.bit_buf.put_bit(sign_neg)
+    }
+
     /// Write a single bit to the buffer. Returns `None` if the buffer is full.
     /// 
     /// # Examples

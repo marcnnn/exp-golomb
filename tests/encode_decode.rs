@@ -20,6 +20,25 @@ fn encode_decode() {
 }
 
 #[test]
+fn encode_decode_signt() {
+    let nums = [0, -1, -2 , -3];
+
+    let mut buf = [0u8; 6];
+    let mut writer = ExpGolombEncoder::new(&mut buf, 0).unwrap();
+
+    for &num in &nums {
+        writer.put_signed_uni(num).unwrap();
+    }
+    writer.close();
+
+    let mut reader = ExpGolombDecoder::new(&buf, 0).unwrap();
+    for &num in &nums {
+        assert_eq!(reader.next_signed_uni(), Some(num));
+    }
+}
+
+
+#[test]
 fn encode_decode_random() {
     const SEED: u64 = 0;
     const NUM_VALS: usize = 1000;
