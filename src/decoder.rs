@@ -165,15 +165,20 @@ impl<'a> ExpGolombDecoder<'a> {
                 return None;
             }
         }
-        let sign = self.next_bit().unwrap();
         let sum: i64;
-        if sign == 1 {
-            let s: i64 = -1;
-            let a: i64 = (x + y).try_into().unwrap();
-            sum = s*a;
-        }
-        else {
-            sum = (x + y).try_into().unwrap()
+        
+        if x+y != 0 {
+            let sign = self.next_bit().unwrap();
+            if sign == 1 {
+                let s: i64 = -1;
+                let a: i64 = (x + y).try_into().unwrap();
+                sum = s*a;
+            }
+            else {
+                sum = (x + y).try_into().unwrap();
+            }
+        }else {
+            sum = (x + y).try_into().unwrap();
         }
         Some(sum)
     }

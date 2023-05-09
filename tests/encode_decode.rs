@@ -37,6 +37,24 @@ fn encode_decode_signt() {
     }
 }
 
+#[test]
+fn encode_decode_signt_zero() {
+    let nums = [0,0];
+    
+    let mut buf = [0u8; 1];
+    let mut writer = ExpGolombEncoder::new(&mut buf, 0).unwrap();
+
+    for &num in &nums {
+        writer.put_signed_uni(num).unwrap();
+    }
+    writer.close();
+    assert_eq!(192u8,buf.to_vec()[0]);
+    let mut reader = ExpGolombDecoder::new(&buf, 0).unwrap();
+    for &num in &nums {
+        assert_eq!(reader.next_signed_uni(), Some(num));
+    }
+}
+
 
 #[test]
 fn encode_decode_random() {

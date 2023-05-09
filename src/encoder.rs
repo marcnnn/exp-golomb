@@ -95,7 +95,10 @@ impl<'a> ExpGolombEncoder<'a> {
         self.bit_buf.put_zeros(num_zeros);
 
         self.bit_buf.put_bytes(&bytes[start..], bit_start).unwrap();
-        self.bit_buf.put_bit(sign_neg)
+        if value != 0 {
+            self.bit_buf.put_bit(sign_neg).unwrap();
+        }
+        Some(())
     }
 
     /// Write a single bit to the buffer. Returns `None` if the buffer is full.
