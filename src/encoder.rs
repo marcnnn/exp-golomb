@@ -9,7 +9,7 @@ impl<'a> ExpGolombEncoder<'a> {
     /// `start` denotes the starting position in the first byte of `buf` and goes from 0 (first) to
     ///  7 (last). This function returns `None` if the buffer is empty or if `start` is  not within
     /// \[0, 7\].
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -44,15 +44,15 @@ impl<'a> ExpGolombEncoder<'a> {
     ///     writer.put_unsigned(i).unwrap();
     /// }
     /// writer.close();
-    /// 
+    ///
     /// assert_eq!(
     ///     buf,
     ///     [0b10100110, 0b01000010, 0b10011000, 0b11100010, 0b00000100, 0b10000000]
     /// );
     /// ```
-    /// 
+    ///
     /// This function guards against out of bounds indexing by returning `None`:
-    /// 
+    ///
     /// ```
     /// # use exp_golomb::ExpGolombEncoder;
     /// let mut buf = [0u8; 1];
@@ -83,26 +83,32 @@ impl<'a> ExpGolombEncoder<'a> {
     #[must_use]
     pub fn put_signed_uni(&mut self, value: i64) -> Option<()> {
         let sign_neg = value < 0;
-        let value: u64 = value.abs_diff(0);
-        let xp1 = value.wrapping_add(1);
-
-        let bytes = xp1.to_be_bytes();
-        let lz = xp1.leading_zeros();
-        let start = (lz / 8) as usize;
-        let bit_start = lz - (lz / 8 * 8);
-
-        let num_zeros = 64 - lz - 1;
-        self.bit_buf.put_zeros(num_zeros);
-
-        self.bit_buf.put_bytes(&bytes[start..], bit_start).unwrap();
-        if value != 0 {
-            self.bit_buf.put_bit(sign_neg).unwrap();
+        match value {
+            0 => self.bit_buf.put_bit(false),
+            1 => self
+                .bit_buf
+                .put_bit(true)
+                .and_then(|_| self.bit_buf.put_bit(false))
+                .and_then(|_| self.bit_buf.put_bit(sign_neg)),
+            -1 => self
+                .bit_buf
+                .put_bit(true)
+                .and_then(|_| self.bit_buf.put_bit(false))
+                .and_then(|_| self.bit_buf.put_bit(sign_neg)),
+            _ => self
+                .bit_buf
+                .put_bit(true)
+                .and_then(|_| self.bit_buf.put_bit(true))
+                .and_then(|_| {
+                    let abs_value = value.abs_diff(0);
+                    self.put_unsigned(abs_value - 2)
+                })
+                .and_then(|_| self.bit_buf.put_bit(sign_neg)),
         }
-        Some(())
     }
 
     /// Write a single bit to the buffer. Returns `None` if the buffer is full.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```
@@ -123,7 +129,7 @@ impl<'a> ExpGolombEncoder<'a> {
     }
 
     /// Consumes the `ExpGolombEncoder`, returning the bit position one past the last written bit.
-    /// 
+    ///
     /// # Examples
     ///
     /// ```

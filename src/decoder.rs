@@ -148,39 +148,24 @@ impl<'a> ExpGolombDecoder<'a> {
     #[inline]
     #[must_use = "use `ExpGolombReader::skip_next` if the value is not needed"]
     pub fn next_signed_uni(&mut self) -> Option<i64> {
-        let mut lz = self.count_leading_zeroes()?;
-        let x = 1u64.wrapping_shl(lz) - 1;
-        let mut y = 0;
-
-        if lz != 0 {
-            for bit in self.iter.by_ref() {
-                y <<= 1;
-                y |= bit as u64;
-                lz -= 1;
-                if lz == 0 {
-                    break;
-                }
-            }
-            if lz != 0 {
-                return None;
-            }
-        }
-        let sum: i64;
-        
-        if x+y != 0 {
-            let sign = self.next_bit().unwrap();
-            if sign == 1 {
-                let s: i64 = -1;
-                let a: i64 = (x + y).try_into().unwrap();
-                sum = s*a;
-            }
-            else {
-                sum = (x + y).try_into().unwrap();
-            }
-        }else {
-            sum = (x + y).try_into().unwrap();
-        }
-        Some(sum)
+        self.next_bit().and_then(|zero| match zero {
+            0 => Some(0),
+            _ => self
+                .next_bit()
+                .and_then(|gt1| match gt1 {
+                    0 => Some(1u64),
+                    1 => self.next_unsigned().and_then(|v| Some(v + 2)),
+                    _ => None,
+                })
+                .and_then(|value| {
+                    self.next_bit().and_then(|signed| {
+                        let factor: i64 = if signed == 1 { -1 } else { 1 };
+                        let v: i64 = value.try_into().unwrap();
+                        let v: i64 = factor * v;
+                        Some(v)
+                    })
+                }),
+        })
     }
 
     /// Read the next Exp-Golomb value, interpreting it as a signed integer. Returns `None` if the

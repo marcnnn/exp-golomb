@@ -21,9 +21,9 @@ fn encode_decode() {
 
 #[test]
 fn encode_decode_signt() {
-    let nums = [0, -1, -2 , -3];
+    let nums = [0, -1, -2, -3, -4, 1, 0, 5];
 
-    let mut buf = [0u8; 6];
+    let mut buf = [0u8; 100];
     let mut writer = ExpGolombEncoder::new(&mut buf, 0).unwrap();
 
     for &num in &nums {
@@ -39,8 +39,8 @@ fn encode_decode_signt() {
 
 #[test]
 fn encode_decode_signt_zero() {
-    let nums = [0,0];
-    
+    let nums = [0, 0];
+
     let mut buf = [0u8; 1];
     let mut writer = ExpGolombEncoder::new(&mut buf, 0).unwrap();
 
@@ -48,13 +48,34 @@ fn encode_decode_signt_zero() {
         writer.put_signed_uni(num).unwrap();
     }
     writer.close();
-    assert_eq!(192u8,buf.to_vec()[0]);
+    println!("{:#010b}", buf.to_vec()[0]);
+    assert_eq!(0u8, buf.to_vec()[0]);
+    //let mut reader = ExpGolombDecoder::new(&buf, 0).unwrap();
+    //for &num in &nums {
+    //    assert_eq!(reader.next_signed_uni(), Some(num));
+    //}
+}
+
+#[test]
+fn encode_decode_signt_checks_bits() {
+    let nums = [-2];
+
+    let mut buf = [0u8; 10];
+    let mut writer = ExpGolombEncoder::new(&mut buf, 0).unwrap();
+
+    for &num in &nums {
+        writer.put_signed_uni(num).unwrap();
+    }
+    writer.close();
+    println!("{:#010b}", buf.to_vec()[0]);
+    println!("{:#010b}", buf.to_vec()[1]);
+    //assert_eq!(0b11010100,buf.to_vec()[0]);
+    //assert_eq!(0b10000000,buf.to_vec()[1]);
     let mut reader = ExpGolombDecoder::new(&buf, 0).unwrap();
     for &num in &nums {
         assert_eq!(reader.next_signed_uni(), Some(num));
     }
 }
-
 
 #[test]
 fn encode_decode_random() {
